@@ -634,5 +634,117 @@
             </div>
         </div>
     </footer>
+    <script>
+        // API Configuration
+        const API_BASE_URL = 'http://localhost:3000/api';
+        let currentUser = null;
+      
+        // DOM Elements
+        const cloneForm = document.getElementById('clone-form');
+        const urlInput = document.getElementById('url-input');
+        const apiKeyInput = document.getElementById('api-key-input');
+        const cloneResult = document.getElementById('clone-result');
+        const clonesList = document.getElementById('clones-list');
+        const signupForm = document.getElementById('signup-form');
+        const loginForm = document.getElementById('login-form');
+      
+        // Clone Website Function
+        async function cloneWebsite(url, apiKey) {
+          try {
+            const response = await fetch(`${API_BASE_URL}/clone`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ url, apiKey }),
+            });
+      
+            const data = await response.json();
+            
+            if (data.error) {
+              showError(data.error);
+            } else {
+              showSuccess(data);
+              fetchUserClones(apiKey);
+            }
+          } catch (error) {
+            showError('Failed to connect to the server');
+            console.error('Error:', error);
+          }
+        }
+      
+        // Fetch User's Clones
+        async function fetchUserClones(apiKey) {
+          try {
+            const response = await fetch(`${API_BASE_URL}/clones?apiKey=${apiKey}`);
+            const data = await response.json();
+            
+            if (data.error) {
+              showError(data.error);
+            } else {
+              displayClones(data);
+            }
+          } catch (error) {
+            console.error('Error fetching clones:', error);
+          }
+        }
+      
+        // Display Clones
+        function displayClones(clones) {
+          clonesList.innerHTML = clones.map(clone => `
+            <div class="clone-item">
+              <h4>${clone.url}</h4>
+              <p>Status: ${clone.status}</p>
+              <p>Created: ${new Date(clone.createdAt).toLocaleString()}</p>
+              ${clone.clonedUrl ? `<a href="${clone.clonedUrl}" target="_blank">View Clone</a>` : ''}
+            </div>
+          `).join('');
+        }
+      
+        // UI Helpers
+        function showError(message) {
+          cloneResult.innerHTML = `
+            <div class="alert error">
+              ${message}
+            </div>
+          `;
+        }
+      
+        function showSuccess(data) {
+          cloneResult.innerHTML = `
+            <div class="alert success">
+              Successfully cloned website!<br>
+              <a href="${data.previewUrl}" target="_blank">Preview Clone</a> | 
+              <a href="${data.downloadUrl}" download>Download Clone</a>
+            </div>
+          `;
+        }
+      
+        // Event Listeners
+        if (cloneForm) {
+          cloneForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const url = urlInput.value;
+            const apiKey = apiKeyInput.value;
+            
+            if (!url || !apiKey) {
+              showError('Please enter both URL and API key');
+              return;
+            }
+            
+            await cloneWebsite(url, apiKey);
+          });
+        }
+      
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+          // Check for stored API key
+          const storedApiKey = localStorage.getItem('siteClonerApiKey');
+          if (storedApiKey) {
+            apiKeyInput.value = storedApiKey;
+            fetchUserClones(storedApiKey);
+          }
+        });
+      </script>
 </body>
 </html>
